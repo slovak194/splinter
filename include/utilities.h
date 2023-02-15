@@ -11,7 +11,7 @@
 #define SPLINTER_UTILITIES_H
 
 #include <vector>
-#include <stdlib.h> // std::abs etc
+#include <cstdlib> // For std::abs, etc.
 #include <definitions.h>
 
 namespace SPLINTER
@@ -19,7 +19,7 @@ namespace SPLINTER
 
 // Compare two numbers
 template<typename T>
-bool assertNear(T x, T y, double tolAbs = 1e-8, double tolRel = 1e-8)
+bool assert_near(T x, T y, double tolAbs = 1e-8, double tolRel = 1e-8)
 {
     double dx = std::abs(x - y);
     double xAbs = 0.5*(std::abs(x) + std::abs(y));
@@ -27,15 +27,32 @@ bool assertNear(T x, T y, double tolAbs = 1e-8, double tolRel = 1e-8)
     return dx < err;
 }
 
-std::vector<double> denseVectorToVector(const DenseVector &denseVec);
+// Compare two vectors
+inline bool compare_vectors(std::vector<double> x, std::vector<double> y, double tolAbs = 1e-8, double tolRel = 1e-8)
+{
+    if (x.size() != y.size())
+        return false;
 
-DenseVector vectorToDenseVector(const std::vector<double> &vec);
+    for (unsigned int i = 0; i < x.size(); ++i)
+        if (!assert_near(x.at(i), y.at(i), tolAbs, tolRel))
+            return false;
 
-std::vector<std::vector<double>> denseMatrixToVectorVector(const DenseMatrix &mat);
+    return true;
+}
 
-DenseMatrix vectorVectorToDenseMatrix(const std::vector<std::vector<double>> &vec);
+std::vector<double> eig_to_std_vec(const DenseVector &vec);
+
+DenseVector std_to_eig_vec(const std::vector<double> &vec);
+
+std::vector<std::vector<double>> eig_to_std_mat(const DenseMatrix &mat);
+
+DenseMatrix std_to_eig_mat(const std::vector<std::vector<double>> &vec);
 
 std::vector<double> linspace(double start, double stop, unsigned int num);
+
+std::vector<double> extract_unique_sorted(const std::vector<double> &values);
+
+std::vector<std::vector<double>> transpose_vec_vec(std::vector<std::vector<double>> x);
 
 } // namespace SPLINTER
 

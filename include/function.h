@@ -11,96 +11,83 @@
 #define SPLINTER_FUNCTION_H
 
 #include "definitions.h"
-#include "saveable.h"
 
 namespace SPLINTER
 {
 
 /*
- * Interface for functions
+ * Interface for functions f : R^m -> R^n
  * All functions working with standard C++11 types are defined in terms of their Eigen counterparts.
- * Default implementations of jacobian and hessian evaluation is using central difference.
- * TODO: Remove current requirement that all functions must implement save and load!
+ * Default implementations of Jacobian uses central differences.
  */
-class SPLINTER_API Function : public Saveable
+class SPLINTER_API Function
 {
 public:
     Function()
-        : Function(1) {}
+        : Function(1, 1) {}
 
-    Function(unsigned int numVariables)
-        : numVariables(numVariables) {}
+    Function(unsigned int m, unsigned int n)
+        : dim_x(m), dim_y(n) {}
 
     virtual ~Function() {}
 
     /**
-     * Returns the function value at x
+     * Returns the (dimY) function values at x
      */
-    virtual double eval(DenseVector x) const = 0;
+    virtual std::vector<double> eval(const std::vector<double> &x) const = 0;
+
+    virtual DenseVector eval(const DenseVector &x) const;
 
     /**
-     * Returns the function value at x
+     * Returns the (dimY x dimX) Jacobian evaluated at x
      */
-    double eval(const std::vector<double> &x) const;
+    virtual DenseMatrix eval_jacobian(const DenseVector &x) const;
 
     /**
-     * Returns the (1 x numVariables) Jacobian evaluated at x
+     * Returns the (dimY x dimX) Jacobian evaluated at x
      */
-    virtual DenseMatrix evalJacobian(DenseVector x) const;
+    std::vector<std::vector<double>> eval_jacobian(const std::vector<double> &x) const;
 
     /**
-     * Returns the (1 x numVariables) Jacobian evaluated at x
+     * Get dimensions
      */
-    std::vector<double> evalJacobian(const std::vector<double> &x) const;
-
-    /**
-     * Returns the (numVariables x numVariables) Hessian evaluated at x
-     */
-    virtual DenseMatrix evalHessian(DenseVector x) const;
-
-    /**
-     * Returns the (numVariables x numVariables) Hessian evaluated at x
-     */
-    std::vector<std::vector<double>> evalHessian(const std::vector<double> &x) const;
-
-    /**
-     * Get the dimension
-     */
-    inline unsigned int getNumVariables() const
+    inline unsigned int get_dim_x() const
     {
-        return numVariables;
+        return dim_x;
+    }
+
+    inline unsigned int get_dim_y() const
+    {
+        return dim_y;
     }
 
     /**
      * Check input
      */
-    void checkInput(DenseVector x) const {
-        if (x.size() != numVariables)
-            throw Exception("Function::checkInput: Wrong dimension on evaluation point x.");
+    void check_input(const std::vector<double> &x) const {
+        if (x.size() != dim_x)
+            throw Exception("Function::check_input: Wrong dimension on evaluation point x.");
     }
+
+    void check_input(const DenseVector &x) const;
 
     /**
      * Returns the central difference at x
-     * Vector of numVariables length
      */
-    std::vector<double> centralDifference(const std::vector<double> &x) const;
-    DenseMatrix centralDifference(DenseVector x) const;
-
-    std::vector<std::vector<double>> secondOrderCentralDifference(const std::vector<double> &x) const;
-    DenseMatrix secondOrderCentralDifference(DenseVector x) const;
+    DenseMatrix central_difference(const DenseVector &x) const;
 
     /**
      * Description of function.
      */
-    virtual std::string getDescription() const
+    virtual std::string get_description() const
     {
         return "";
     }
 
 protected:
-    unsigned int numVariables; // Dimension of domain (size of x)
+    unsigned int dim_x; // Dimension of domain (size of x)
+    unsigned int dim_y; // Dimension of codomain (size of y)
 
-    friend class Serializer;
 };
 
 } // namespace SPLINTER

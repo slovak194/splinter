@@ -12,6 +12,10 @@ string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 # Read the SPLINTER version from version file
 file(STRINGS "version" VERSION)
 
+# GCC 4.* required for some applications
+# NOTE for Python users: if the library is compiled with GCC > 4.8 the libgcc library must be installed (conda install libgcc)
+#set(CMAKE_CXX_COMPILER /usr/bin/g++-4.8)
+
 # Default configuration values
 set(DEFAULT_BUILD_TYPE "Release")
 set(DEFAULT_ARCH "x86-64")
@@ -34,16 +38,14 @@ else()
 endif()
 
 # Detect compiler
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+string(COMPARE EQUAL "Clang"      ${CMAKE_CXX_COMPILER_ID} CLANG)
+string(COMPARE EQUAL "AppleClang" ${CMAKE_CXX_COMPILER_ID} APPLECLANG)
+string(COMPARE EQUAL "GNU"        ${CMAKE_CXX_COMPILER_ID} GCC)
+string(COMPARE EQUAL "Intel"      ${CMAKE_CXX_COMPILER_ID} INTEL)
+string(COMPARE EQUAL "MSVC"       ${CMAKE_CXX_COMPILER_ID} MSVC)
+
+if (CLANG OR APPLECLANG)
     set(CLANG 1)
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    set(CLANG 1)
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set(GCC 1)
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-    set(INTEL 1)
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    set(MSVC 1)
 endif()
 
 # Set build type
@@ -75,32 +77,32 @@ else()
 endif()
 
 if(WINDOWS AND GCC)
-	# MinGW (GCC on Windows) version 4.8.1 has a bug where _hypot is not found
-	# when using any level of optimization. Defining __NO_INLINE__ fixes the bug.
-	# The bug probably exists on other versions of MinGW as well, but that has not been verified by us.
+    # MinGW (GCC on Windows) version 4.8.1 has a bug where _hypot is not found
+    # when using any level of optimization. Defining __NO_INLINE__ fixes the bug.
+    # The bug probably exists on other versions of MinGW as well, but that has not been verified by us.
     if(CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL "4.8.1")
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -D__NO_INLINE__")
     endif()
     if(CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL "4.9.2")
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
-		# From the GCC man pages:
-		# If you use multiple -O options, with or without level numbers, the last such option is the one that is effective.
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -finline-functions")
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -funswitch-loops")
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fpredictive-commoning")
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fgcse-after-reload")
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -ftree-loop-vectorize")
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -ftree-loop-distribute-patterns")
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -ftree-slp-vectorize")
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fvect-cost-model")
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -ftree-partial-pre")
-		# -fipa-cp-clone causes a SegFault in Eigen when enabled with MinGW i686 4.9.2 with dwarf exception model
-		#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fipa-cp-clone")
-	endif()
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
+        # From the GCC man pages:
+        # If you use multiple -O options, with or without level numbers, the last such option is the one that is effective.
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -finline-functions")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -funswitch-loops")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fpredictive-commoning")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fgcse-after-reload")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -ftree-loop-vectorize")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -ftree-loop-distribute-patterns")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -ftree-slp-vectorize")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fvect-cost-model")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -ftree-partial-pre")
+        # -fipa-cp-clone causes a SegFault in Eigen when enabled with MinGW i686 4.9.2 with dwarf exception model
+        #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fipa-cp-clone")
+    endif()
 
-	# To avoid an external dependency (libgcc_s_seh11.dll or libgcc_s_dw2-1.dll)
-	# we statically link the libraries required by MinGW runtimes
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -static")
+    # To avoid an external dependency (libgcc_s_seh11.dll or libgcc_s_dw2-1.dll)
+    # we statically link the libraries required by MinGW runtimes
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -static")
 endif()
 
 if(MSVC)
@@ -111,12 +113,14 @@ if(MSVC)
     else()
         set(BITNESS "32")
     endif()
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ox")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ox")
 
 elseif(GCC OR CLANG)
+    message("Identified compiler as GCC or Clang")
     # Treat warning return-type as error to avoid undefined behaviour
     # when a non-void function does not return a value.
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${BITNESS_FLAG} -std=c++11 -Werror=return-type")
+    message("CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wno-long-long")
 
 elseif(INTEL)
@@ -125,7 +129,7 @@ elseif(INTEL)
 endif()
 
 if(NOT EIGEN_DIRECTORY)
-	set(EIGEN_DIRECTORY ${DEFAULT_EIGEN_DIRECTORY})
+    set(EIGEN_DIRECTORY ${DEFAULT_EIGEN_DIRECTORY})
 endif()
 # CACHE STRING = Display the option with help text in CMakeCache.txt
 set(EIGEN_DIRECTORY ${EIGEN_DIRECTORY} CACHE STRING "Directory where the Eigen library is located.")
@@ -146,69 +150,84 @@ set(LIBRARY_INSTALL_DIRECTORY ${LIBRARY_INSTALL_DIRECTORY} CACHE STRING "Absolut
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${EIGEN_DIRECTORY})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/test)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/Catch)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty)
 
 set(CINTERFACE_SRC_LIST
     include/cinterface/cinterface.h
     include/cinterface/utilities.h
     src/cinterface/bspline.cpp
-    src/cinterface/bsplinebuilder.cpp
+    src/cinterface/bspline_builders.cpp
     src/cinterface/cinterface.cpp
-    src/cinterface/datatable.cpp
+    src/cinterface/data_table.cpp
     src/cinterface/utilities.cpp
 )
 # These are the sources we need for compilation of the library
 set(SRC_LIST
     ${CINTERFACE_SRC_LIST}
     include/bspline.h
-    include/bsplinebasis.h
-    include/bsplinebasis1d.h
-    include/knots.h
-    include/bsplinebuilder.h
-    include/datapoint.h
-    include/datatable.h
+    include/bspline_basis.h
+    include/bspline_basis_1d.h
+    include/knot_builders.h
+    include/knot_vector.h
+    include/bspline_builders.h
+    include/bspline_utils.h
+    include/data_point.h
+    include/data_table.h
     include/function.h
     include/definitions.h
-    include/linearsolvers.h
-    include/mykroneckerproduct.h
-    include/serializer.h
+    include/linear_solvers.h
+    include/kronecker_product.h
     include/utilities.h
-    include/saveable.h
+    include/json_parser.h
     src/bspline.cpp
-    src/bsplinebasis.cpp
-    src/bsplinebasis1d.cpp
-    src/knots.cpp
-    src/bsplinebuilder.cpp
-    src/datapoint.cpp
-    src/datatable.cpp
+    src/bspline_basis.cpp
+    src/bspline_basis_1d.cpp
+    src/knot_builders.cpp
+    src/knot_vector.cpp
+    src/bspline_builders.cpp
+    src/bspline_utils.cpp
+    src/data_point.cpp
+    src/data_table.cpp
     src/function.cpp
-    src/mykroneckerproduct.cpp
-    src/serializer.cpp
+    src/kronecker_product.cpp
     src/utilities.cpp
-)
+    src/json_parser.cpp)
+
 set(TEST_SRC_LIST
     ${SRC_LIST}
     test/main.cpp
     test/approximation/bspline.cpp
+    test/approximation/bspline_wls.cpp
     test/approximation/pspline.cpp
     test/general/bspline.cpp
-    test/general/datatable.cpp
+    test/general/bspline_builder.cpp
+    test/unit/data_table.cpp
     test/general/utilities.cpp
-    test/serialization/datatable.cpp
-    test/serialization/bspline.cpp
-    test/operatoroverloads.h
-    test/operatoroverloads.cpp
-    test/testfunction.h
-    test/testfunction.cpp
-    test/testfunctions.h
-    test/testfunctions.cpp
-    test/testingutilities.h
-    test/testingutilities.cpp
-    test/bsplinetestingutilities.h
-    test/bsplinetestingutilities.cpp
-    test/serialization/eigentypes.cpp
-    test/unit/bsplinebasis1d.cpp
-    test/unit/knots.cpp)
+    test/examples/approximation.cpp
+    test/utils/op_overloads.h
+    test/utils/op_overloads.cpp
+    test/utils/test_function.h
+    test/utils/test_function.cpp
+    test/utils/test_function_collection.h
+    test/utils/test_function_collection.cpp
+    test/utils/test_function_utils.h
+    test/utils/test_function_utils.cpp
+    test/utils/test_utils.h
+    test/utils/test_utils.cpp
+    test/utils/bspline_test_utils.h
+    test/utils/bspline_test_utils.cpp
+    test/unit/bspline_basis_1d.cpp
+    test/unit/bspline_hessian.cpp
+    test/unit/bspline_utils.cpp
+    test/unit/knots.cpp
+    test/unit/knot_vector.cpp
+    test/unit/json_parser.cpp
+    test/utils/timer.h
+    test/utils/bspline_collection.cpp
+    test/utils/bspline_collection.h
+    test/utils/data_table_collection.cpp
+    test/utils/data_table_collection.h
+    test/examples/fit_random_1d_spline.cpp)
 
 set(SHARED_LIBRARY ${PROJECT_NAME_LOWER}-${VERSION})
 set(STATIC_LIBRARY ${PROJECT_NAME_LOWER}-static-${VERSION})
@@ -221,53 +240,30 @@ set(TEST "${PROJECT_NAME_LOWER}-test")
 add_library(${SHARED_LIBRARY} SHARED ${SRC_LIST})
 add_library(${STATIC_LIBRARY} STATIC ${SRC_LIST})
 
-# Testing executable
+# Create test executable
 add_executable(${TEST} ${TEST_SRC_LIST})
 target_link_libraries(${TEST} ${STATIC_LIBRARY})
 
-# Make the directory structure expected by the MatLab interface
-# License file
-install(
-        FILES ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/splinter-matlab/
-)
-# Matlab files (.m)
-install(
-        DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/matlab
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/splinter-matlab
-)
-# Version file (used for deducing the name of the binary when loading it)
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/splinter-matlab/version ${VERSION})
-install(
-        FILES include/cinterface/cinterface.h
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/splinter-matlab/include
-)
-install(
-        TARGETS ${SHARED_LIBRARY}
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/splinter-matlab/lib/${OS_STRING}/${ARCH}
-)
+# Copy test resources
+file(COPY test/resources/ DESTINATION ${CMAKE_BINARY_DIR}/test-resources)
 
 # Make the directory structure expected by the Python interface
-install(
-        FILES ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/splinter-python/
-)
 # Python files (.py)
 install(
-        DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python
+        DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python/
         DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/splinter-python
         PATTERN "*.pyc" EXCLUDE
         PATTERN "__pycache__*" EXCLUDE
 )
-# Version file (used for deducing the name of the binary when loading it)
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/splinter-python/version ${VERSION})
 install(
-        FILES include/cinterface/cinterface.h
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/splinter-python/include
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
+        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/splinter-python/
 )
+# The Python interface reads the library version from this file
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/splinter-python/splinterpy/version ${VERSION})
 install(
         TARGETS ${SHARED_LIBRARY}
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/splinter-python/lib/${OS_STRING}/${ARCH}
+        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/splinter-python/splinterpy/lib/${OS_STRING}/${ARCH}
 )
 
 # Install the header files (including Eigen) to the header directory
@@ -310,13 +306,13 @@ endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL DEBUG)
     message("Detected compiler and platform:")
-	message("Clang:   ${CLANG}")
-	message("GCC:     ${GCC}")
-	message("Intel:   ${INTEL}")
-	message("MSVC:    ${MSVC}")
-	message("Linux:   ${LINUX}")
-	message("Windows: ${WINDOWS}")
-	message("OS X:    ${OS_X}")
+    message("Clang:   ${CLANG}")
+    message("GCC:     ${GCC}")
+    message("Intel:   ${INTEL}")
+    message("MSVC:    ${MSVC}")
+    message("Linux:   ${LINUX}")
+    message("Windows: ${WINDOWS}")
+    message("OS X:    ${OS_X}")
 endif()
 
 message("Configuring ${PROJECT_NAME} version ${VERSION} in ${CMAKE_BUILD_TYPE} mode for ${ARCH} (${BITNESS} bit)")

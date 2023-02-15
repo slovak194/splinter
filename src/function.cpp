@@ -13,118 +13,51 @@
 namespace SPLINTER
 {
 
-double Function::eval(const std::vector<double> &x) const
-{
-    auto denseX = vectorToDenseVector(x);
-
-    return eval(denseX);
+DenseVector Function::eval(const DenseVector &x) const {
+    return std_to_eig_vec(eval(eig_to_std_vec(x)));
 }
 
-std::vector<double> Function::evalJacobian(const std::vector<double> &x) const
+std::vector<std::vector<double>> Function::eval_jacobian(const std::vector<double> &x) const
 {
-    auto denseX = vectorToDenseVector(x);
+    auto eig_x = std_to_eig_vec(x);
 
-    return denseVectorToVector(evalJacobian(denseX));
+    return eig_to_std_mat(eval_jacobian(eig_x));
 }
 
-std::vector<std::vector<double>> Function::evalHessian(const std::vector<double> &x) const
+DenseMatrix Function::eval_jacobian(const DenseVector &x) const
 {
-    auto denseX = vectorToDenseVector(x);
-
-    return denseMatrixToVectorVector(secondOrderCentralDifference(denseX));
+    return central_difference(x);
 }
 
-std::vector<double> Function::centralDifference(const std::vector<double> &x) const
+DenseMatrix Function::central_difference(const DenseVector &x) const
 {
-    auto denseX = vectorToDenseVector(x);
-
-    auto dx = centralDifference(denseX);
-
-    return denseVectorToVector(dx);
-}
-
-std::vector<std::vector<double>> Function::secondOrderCentralDifference(const std::vector<double> &x) const
-{
-    auto denseX = vectorToDenseVector(x);
-
-    DenseMatrix ddx = secondOrderCentralDifference(denseX);
-
-    return denseMatrixToVectorVector(ddx);
-}
-
-DenseMatrix Function::evalJacobian(DenseVector x) const
-{
-    return centralDifference(x);
-}
-
-DenseMatrix Function::evalHessian(DenseVector x) const
-{
-    auto vec = denseVectorToVector(x);
-
-    auto hessian = evalHessian(vec);
-
-    return vectorVectorToDenseMatrix(hessian);
-}
-
-DenseMatrix Function::centralDifference(DenseVector x) const
-{
-    DenseMatrix dx(1, x.size());
+    DenseMatrix jacobian(dim_y, dim_x);
 
     double h = 1e-6; // perturbation step size
-    double hForward = 0.5*h;
-    double hBackward = 0.5*h;
+    double h_forward = 0.5*h;
+    double h_backward = 0.5*h;
 
-    for (unsigned int i = 0; i < getNumVariables(); ++i)
+    for (unsigned int i = 0; i < dim_x; ++i)
     {
-        DenseVector xForward(x);
-        xForward(i) = xForward(i) + hForward;
+        DenseVector x_forward(x);
+        x_forward(i) = x_forward(i) + h_forward;
 
-        DenseVector xBackward(x);
-        xBackward(i) = xBackward(i) - hBackward;
+        DenseVector x_backward(x);
+        x_backward(i) = x_backward(i) - h_backward;
 
-        double yForward = eval(xForward);
-        double yBackward = eval(xBackward);
+        auto y_forward = eval(x_forward);
+        auto y_backward = eval(x_backward);
 
-        dx(i) = (yForward - yBackward)/(hBackward + hForward);
+        for (unsigned int j = 0; j < dim_y; ++j)
+            jacobian(j, i) = (y_forward(j) - y_backward(j)) / (h_backward + h_forward);
     }
 
-    return dx;
+    return jacobian;
 }
 
-DenseMatrix Function::secondOrderCentralDifference(DenseVector x) const
-{
-    DenseMatrix ddx(getNumVariables(), getNumVariables());
-
-    double h = 1e-6; // perturbation step size
-    double hForward = 0.5*h;
-    double hBackward = 0.5*h;
-
-    for (size_t i = 0; i < getNumVariables(); ++i)
-    {
-        for (size_t j = 0; j < getNumVariables(); ++j)
-        {
-            DenseVector x0(x);
-            DenseVector x1(x);
-            DenseVector x2(x);
-            DenseVector x3(x);
-
-            x0(i) = x0(i) + hForward;
-            x0(j) = x0(j) + hForward;
-
-            x1(i) = x1(i) - hBackward;
-            x1(j) = x1(j) + hForward;
-
-            x2(i) = x2(i) + hForward;
-            x2(j) = x2(j) - hBackward;
-
-            x3(i) = x3(i) - hBackward;
-            x3(j) = x3(j) - hBackward;
-
-            ddx(i, j) = (eval(x0) - eval(x1) - eval(x2) + eval(x3)) / (h * h);
-        }
-    }
-
-    return ddx;
+void Function::check_input(const DenseVector &x) const {
+    return check_input(eig_to_std_vec(x));
 }
+
 
 } // namespace SPLINTER

@@ -8,7 +8,9 @@
 */
 
 #include <Catch.h>
-#include <knots.h>
+#include <knot_builders.h>
+#include <knot_vector.h>
+#include <iostream>
 
 using namespace SPLINTER;
 
@@ -16,37 +18,55 @@ using namespace SPLINTER;
 #define COMMON_TEXT " unit test"
 
 
-TEST_CASE("isKnotVectorRegular" COMMON_TEXT, COMMON_TAGS)
+TEST_CASE("is_regular" COMMON_TEXT, COMMON_TAGS)
 {
-    std::vector<double> knots0 = {1, 2.1, 3.1, 4};
-    std::vector<double> knots1 = {1, 1, 2.1, 3.1, 4, 4};
-    std::vector<double> knots2 = {1, 1, 1, 2.1, 3.1, 4, 4, 4};
-    std::vector<double> knots3 = {1, 1, 1, 1, 2.1, 3.1, 4, 4, 4, 4};
-    std::vector<double> knots4 = {1, 1, 2.1, 2.0, 4, 4};
+    auto knots0 = KnotVector({1, 2.1, 3.1, 4});
+    auto knots1 = KnotVector({1, 1, 2.1, 3.1, 4, 4});
+    auto knots2 = KnotVector({1, 1, 1, 2.1, 3.1, 4, 4, 4});
+    auto knots3 = KnotVector({1, 1, 1, 1, 2.1, 3.1, 4, 4, 4, 4});
+    auto knots4 = KnotVector({1, 1, 2.0, 2.1, 4, 4});
 
-    REQUIRE(isKnotVectorRegular(knots0, 0));
-    REQUIRE(isKnotVectorRegular(knots1, 1));
-    REQUIRE(isKnotVectorRegular(knots2, 2));
-    REQUIRE(isKnotVectorRegular(knots3, 3));
-    REQUIRE(isKnotVectorRegular(knots3, 4));
-    REQUIRE(!isKnotVectorRegular(knots4, 1));
+    REQUIRE(knots0.is_regular(0));
+    REQUIRE(knots1.is_regular(1));
+    REQUIRE(!knots2.is_regular(1));
+    REQUIRE(knots2.is_regular(2));
+    REQUIRE(!knots3.is_regular(2));
+    REQUIRE(knots3.is_regular(3));
+    REQUIRE(knots3.is_regular(4));
+    REQUIRE(knots4.is_regular(1));
 }
 
-TEST_CASE("isKnotVectorClamped" COMMON_TEXT, COMMON_TAGS)
+TEST_CASE("is_clamped" COMMON_TEXT, COMMON_TAGS)
 {
-    std::vector<double> knots1 = {1, 1, 2.1, 3.1, 4, 4};
-    std::vector<double> knots2 = {1, 1, 1, 2.1, 3.1, 4, 4, 4};
-    std::vector<double> knots3 = {1, 1, 1, 1, 2.1, 3.1, 4, 4, 4, 4};
+    auto knots1 = KnotVector({1, 1, 2.1, 3.1, 4, 4});
+    auto knots2 = KnotVector({1, 1, 1, 2.1, 3.1, 4, 4, 4});
+    auto knots3 = KnotVector({1, 1, 1, 1, 2.1, 3.1, 4, 4, 4, 4});
 
-    REQUIRE(isKnotVectorClamped(knots1, 1));
-    REQUIRE(isKnotVectorClamped(knots2, 2));
-    REQUIRE(isKnotVectorClamped(knots3, 3));
+    REQUIRE(knots1.is_clamped(1));
+    REQUIRE(knots2.is_clamped(2));
+    REQUIRE(knots3.is_clamped(3));
 }
 
-TEST_CASE("isKnotVectorRefinement" COMMON_TEXT, COMMON_TAGS)
+TEST_CASE("is_refinement" COMMON_TEXT, COMMON_TAGS)
 {
-    std::vector<double> knots1 = {1, 1, 1, 2.1, 3.1, 4, 4, 4};
-    std::vector<double> knots2 = {1, 1, 1, 2.1, 2.5, 3.1, 4, 4, 4};
+    auto knots1 = KnotVector({1, 1, 1, 2.1, 3.1, 4, 4, 4});
+    auto knots2 = KnotVector({1, 1, 1, 2.1, 2.5, 3.1, 4, 4, 4});
 
-    REQUIRE(isKnotVectorRefinement(knots1, knots2));
+    REQUIRE(knots1.is_refinement(knots2));
+}
+
+TEST_CASE("knot_vector_expanded_equidistant" COMMON_TEXT, COMMON_TAGS)
+{
+    std::vector<double> values = {1, 1, 1, 2.1, 3.1, 4, 4, 4, 3.1, 2.1, 2.2};
+    unsigned int degree = 3;
+    unsigned int num_basis_functions = 1;
+    auto knots = knot_vector_expanded_equidistant(values, degree, num_basis_functions);
+    std::vector<double> correct_knots = {0.7, 1.6, 2.5, 3.4, 4.3};
+
+    REQUIRE(knots.size() == correct_knots.size());
+    bool flag = true;
+    for (unsigned int i = 0; i < knots.size(); ++i)
+        if (std::fabs(knots.at(i) - correct_knots.at(i)) > 1e-6)
+            flag = false;
+    REQUIRE(flag);
 }

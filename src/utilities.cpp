@@ -12,31 +12,28 @@
 namespace SPLINTER
 {
 
-std::vector<double> denseVectorToVector(const DenseVector &denseVec)
+std::vector<double> eig_to_std_vec(const DenseVector &vec)
 {
-    std::vector<double> vec(denseVec.size());
+    std::vector<double> stdVec(vec.size());
 
-    for(size_t i = 0; i < (size_t) denseVec.size(); ++i)
-    {
-        vec.at(i) = denseVec(i);
-    }
+    for(size_t i = 0; i < (size_t) stdVec.size(); ++i)
+        stdVec.at(i) = vec(i);
 
-    return vec;
+    return stdVec;
 }
 
-DenseVector vectorToDenseVector(const std::vector<double> &vec)
+DenseVector std_to_eig_vec(const std::vector<double> &vec)
 {
-    DenseVector denseVec(vec.size());
+    DenseVector eigVec(vec.size());
+    eigVec.setZero();
 
-    for(size_t i = 0; i < vec.size(); ++i)
-    {
-        denseVec(i) = vec.at(i);
-    }
+    for (size_t i = 0; i < vec.size(); ++i)
+        eigVec(i) = vec.at(i);
 
-    return denseVec;
+    return eigVec;
 }
 
-std::vector<std::vector<double>> denseMatrixToVectorVector(const DenseMatrix &mat)
+std::vector<std::vector<double>> eig_to_std_mat(const DenseMatrix &mat)
 {
     std::vector<std::vector<double>> vec(mat.rows());
 
@@ -51,7 +48,7 @@ std::vector<std::vector<double>> denseMatrixToVectorVector(const DenseMatrix &ma
     return vec;
 }
 
-DenseMatrix vectorVectorToDenseMatrix(const std::vector<std::vector<double>> &vec)
+DenseMatrix std_to_eig_mat(const std::vector<std::vector<double>> &vec)
 {
     size_t numRows = vec.size();
     size_t numCols = numRows > 0 ? vec.at(0).size() : 0;
@@ -78,6 +75,35 @@ std::vector<double> linspace(double start, double stop, unsigned int num)
     for (unsigned int i = 0; i < num; ++i)
         ret.push_back(start + i*dx);
     return ret;
+}
+
+std::vector<double> extract_unique_sorted(const std::vector<double> &values)
+{
+    // Sort and remove duplicates
+    std::vector<double> unique(values);
+    std::sort(unique.begin(), unique.end());
+    std::vector<double>::iterator it = unique_copy(unique.begin(), unique.end(), unique.begin());
+    unique.resize(distance(unique.begin(),it));
+    return unique;
+}
+
+std::vector<std::vector<double>> transpose_vec_vec(std::vector<std::vector<double>> x)
+{
+    std::vector<std::vector<double>> xt;
+    if (x.size() == 0) {
+        return xt;
+    }
+    size_t inner_dim = x.at(0).size();
+
+    for (unsigned int i = 0; i < inner_dim; ++i) {
+        std::vector<double> inner;
+        for (unsigned int j = 0; j < x.size(); ++j) {
+            auto xji = x.at(j).at(i);
+            inner.push_back(xji);
+        }
+        xt.push_back(inner);
+    }
+    return xt;
 }
 
 } // namespace SPLINTER
