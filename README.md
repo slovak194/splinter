@@ -20,6 +20,20 @@ A standards compliant C++11 compiler.
 
 Linux x64: `pip install splinterpy`
 
+### Build from source C++ and Python
+```
+git clone git@github.com:slovak194/splinter.git
+cd splinter
+mkdir build && cd build
+rm -r *
+cmake .. -DCMAKE_BUILD_TYPE=release
+make
+sudo make install
+cd splinter-python
+python3 setup.py sdist bdist_wheel
+pip3 install --user --editable .
+```
+
 ### Guides
 * [Basic usage](docs/basic_usage.md)
 * [C++ interface](docs/cpp_interface.md)
