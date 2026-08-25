@@ -241,7 +241,7 @@ add_library(${SHARED_LIBRARY} SHARED ${SRC_LIST})
 add_library(${STATIC_LIBRARY} STATIC ${SRC_LIST})
 
 # Add pybind11 module
-add_subdirectory(python/splinterpy11)
+# add_subdirectory(python/splinterpy11)  # TODO, OSLO, apparently this is not needed. As bspline can be created from json using splinterpy.BSpline.from_json(some_file).
 
 # Create test executable
 add_executable(${TEST} ${TEST_SRC_LIST})
