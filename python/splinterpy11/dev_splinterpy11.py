@@ -1,7 +1,5 @@
+# %%
 import os, sys
-
-sys.path.extend([os.getcwd()+"python/splinterpy11"])
-from splinterpy import splinterpy11
 
 import tempfile
 import splinterpy
@@ -36,6 +34,26 @@ print("\nbspline.eval_jacobian:\n", bspline.eval_jacobian(p))
 with tempfile.NamedTemporaryFile() as temp:
     bspline.to_json(temp.name)
 
-    bspline11 = splinterpy11.BSpline(temp.name)
-    print("\nbspline11.eval:\n", bspline11.eval(p))
-    print("\nbspline11.eval_jacobian:\n", bspline11.eval_jacobian(p))
+    bspline_legacy = splinterpy.BSpline.from_json(temp.name)
+    print("\nbspline11.eval:\n", bspline_legacy.eval(p))
+    print("\nbspline11.eval_jacobian:\n", bspline_legacy.eval_jacobian(p))
+    # This evaluation of a jacobian is wrong. It gives (1, 2) shaped output, but it needs to be (3, 2) according the the shape of the input and output of the function.
+    # That is the reason why I've added pybind11 version, as it suppose to output correctly shaped jacobian.
+
+# %%
+
+from splinterpy import splinterpy11
+
+temp = tempfile.NamedTemporaryFile()
+
+bspline.to_json(temp.name)
+
+bspline11 = splinterpy11.BSpline(temp.name)
+
+# %%
+
+bspline11.eval(p)
+
+print("\nbspline11.eval:\n", bspline11.eval(p))
+print("\nbspline11.eval_jacobian:\n", bspline11.eval_jacobian(p))
+

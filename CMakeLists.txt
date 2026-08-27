@@ -204,6 +204,7 @@ set(TEST_SRC_LIST
     test/unit/data_table.cpp
     test/general/utilities.cpp
     test/examples/approximation.cpp
+    test/examples/from_json.cpp
     test/utils/op_overloads.h
     test/utils/op_overloads.cpp
     test/utils/test_function.h
@@ -241,7 +242,7 @@ add_library(${SHARED_LIBRARY} SHARED ${SRC_LIST})
 add_library(${STATIC_LIBRARY} STATIC ${SRC_LIST})
 
 # Add pybind11 module
-# add_subdirectory(python/splinterpy11)  # TODO, OSLO, apparently this is not needed. As bspline can be created from json using splinterpy.BSpline.from_json(some_file).
+add_subdirectory(python/splinterpy11)  # TODO, OSLO, it is still needed, as legacy python interface supports only 1d jacobians.
 
 # Create test executable
 add_executable(${TEST} ${TEST_SRC_LIST})
