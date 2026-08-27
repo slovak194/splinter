@@ -1,4 +1,21 @@
 # %%
+import numpy as np
+from splinterpy import splinternano
+
+bspline = splinternano.BSpline("/home/slovak/splinter/python/splinternano/test.json")
+
+print(bspline)
+print(bspline.get_description())
+print(bspline.get_domain_upper_bound())
+print(bspline.get_domain_lower_bound())
+
+p = np.array((0.7, -0.1))
+print("\nbspline.eval:\n", bspline.eval(p))
+print("\bspline.eval_jacobian:\n", bspline.eval_jacobian(p))
+
+exit()
+
+# %%
 import os, sys
 
 import tempfile
@@ -56,4 +73,7 @@ bspline11.eval(p)
 
 print("\nbspline11.eval:\n", bspline11.eval(p))
 print("\nbspline11.eval_jacobian:\n", bspline11.eval_jacobian(p))
+
+
+# %%
 

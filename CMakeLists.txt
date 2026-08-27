@@ -5,7 +5,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.27)
 project(SPLINTER CXX)
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 
@@ -17,7 +17,6 @@ file(STRINGS "version" VERSION)
 #set(CMAKE_CXX_COMPILER /usr/bin/g++-4.8)
 
 # Default configuration values
-set(DEFAULT_BUILD_TYPE "Release")
 set(DEFAULT_ARCH "x86-64")
 set(DEFAULT_HEADER_INSTALL_DIRECTORY "include")
 set(DEFAULT_LIBRARY_INSTALL_DIRECTORY "lib")
@@ -49,8 +48,9 @@ if (CLANG OR APPLECLANG)
 endif()
 
 # Set build type
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE ${DEFAULT_BUILD_TYPE})
+if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE)
 
@@ -119,12 +119,12 @@ elseif(GCC OR CLANG)
     message("Identified compiler as GCC or Clang")
     # Treat warning return-type as error to avoid undefined behaviour
     # when a non-void function does not return a value.
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${BITNESS_FLAG} -std=c++14 -Werror=return-type")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${BITNESS_FLAG} -std=c++17 -Werror=return-type")
     message("CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wno-long-long")
 
 elseif(INTEL)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${BITNESS_FLAG} -std=c++14")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${BITNESS_FLAG} -std=c++17")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
 endif()
 
@@ -241,8 +241,9 @@ set(TEST "${PROJECT_NAME_LOWER}-test")
 add_library(${SHARED_LIBRARY} SHARED ${SRC_LIST})
 add_library(${STATIC_LIBRARY} STATIC ${SRC_LIST})
 
-# Add pybind11 module
-add_subdirectory(python/splinterpy11)  # TODO, OSLO, it is still needed, as legacy python interface supports only 1d jacobians.
+# Add nanobind module. It gives correctly sized jacobians. Legacy python bindings fail on doing so.
+add_subdirectory(thirdparty/nanobind)
+add_subdirectory(python/splinternano)
 
 # Create test executable
 add_executable(${TEST} ${TEST_SRC_LIST})
